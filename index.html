@@ -300,14 +300,19 @@
             </div>
             
             <div class="update-box" style="margin-top: 10px; border-top: 1px dashed #444; padding-top: 10px;">
-                <label style="font-size: 11px; color: var(--primary);">Chwazi Round pou jenere:</label>
+                <label style="font-size: 11px; color: var(--primary);">Paramèt Match yo:</label>
+                <input type="date" id="pool-date-manual">
+                <input type="time" id="pool-time-manual">
+
+                <label style="font-size: 11px; color: var(--primary);">Chwazi Round:</label>
                 <select id="round-select">
+                    <option value="qualifications">Qualifications</option>
                     <option value="round_of_16">Premier Tour</option>
                     <option value="quarter_finals">Quarter Finals</option>
                     <option value="semi_finals">Semi Finals</option>
                     <option value="final">Final</option>
                 </select>
-                <button class="btn-update" style="width:100%; background:var(--accent)" onclick="jenerePoolMatch()">Jenere Pool (Otomatik)</button>
+                <button class="btn-update" style="width:100%; background:var(--accent)" onclick="jenerePoolMatch()">Jenere Pool</button>
             </div>
             <button class="btn-ban" style="width:100%; margin-top:5px;" onclick="closePoolModal()">Fèmen</button>
         </div>
@@ -417,10 +422,15 @@
             .then(() => alert("Ganyen sove!"));
         };
 
-        // --- MODIFIKASYON POU DAT JENERE OTOMATIK ---
+        // --- JENERE POOL AK QUALIFICATIONS ---
         window.jenerePoolMatch = async () => {
             const roundToGen = document.getElementById('round-select').value;
-            const rounds = ["round_of_16", "quarter_finals", "semi_finals", "final"];
+            const manDate = document.getElementById('pool-date-manual').value;
+            const manTime = document.getElementById('pool-time-manual').value;
+
+            if(!manDate || !manTime) return alert("Tanpri chwazi Dat ak Lè avan!");
+
+            const rounds = ["qualifications", "round_of_16", "quarter_finals", "semi_finals", "final"];
             const currentIdx = rounds.indexOf(roundToGen);
 
             const snap = await get(ref(db, `tournaments/${activeTournoiID}`));
@@ -429,10 +439,10 @@
             const tourData = snap.val();
             let list = [];
             
-            if (currentIdx === 0) {
+            if (currentIdx === 0) { // Si se Qualifications
                 if(!tourData.teams) return alert("Ajoute moun anvan!");
                 Object.values(tourData.teams).forEach(t => list.push(t.name));
-            } else {
+            } else { // Si se lòt round yo
                 const prevRound = rounds[currentIdx - 1];
                 const prevMatches = tourData.brackets?.[prevRound];
                 if(!prevMatches) return alert("Ou dwe jenere round anvan an dabò!");
@@ -441,29 +451,30 @@
                     if(m.winner && m.winner !== "null") list.push(m.winner);
                 });
                 
-                if(list.length < 2) return alert("Ou dwe chwazi ganyen yo nan round anvan an anvan!");
+                if(list.length < 2) return alert("Ou dwe chwazi ganyen yo nan round anvan an!");
             }
 
             list.sort(() => Math.random() - 0.5); 
             
-            // JENERE DAT AK LÈ KREYE KOUNYA LAN
-            const kounya = new Date();
-            const datAktyel = kounya.toLocaleDateString('en-GB').replace(/\//g, '-'); // Eg: 14-02-2026
-            const leAktyel = kounya.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            // Konvèti lè a nan 12h format
+            const [hrs, mins] = manTime.split(':');
+            const h = hrs % 12 || 12;
+            const ampm = hrs >= 12 ? 'PM' : 'AM';
+            const formattedTime = `${h}:${mins} ${ampm}`;
 
             let matchData = [];
             for(let i=0; i<list.length; i+=2) { 
                 matchData.push({ 
                     p1: list[i], 
                     p2: list[i+1] || "BYE (Avanse)",
-                    date: datAktyel,
-                    time: leAktyel,
+                    date: manDate,
+                    time: formattedTime,
                     winner: "null"
                 }); 
             }
             
             update(ref(db, `tournaments/${activeTournoiID}/brackets`), { [roundToGen]: matchData })
-            .then(() => alert("Round " + roundToGen + " jenere ak dat jodi a!"));
+            .then(() => alert("Round " + roundToGen + " jenere ak siksè!"));
         }
 
         window.voyeTournoi = function() {
@@ -486,7 +497,7 @@
                     created_at: serverTimestamp()
                 },
                 schedule: { start_date: date, start_time: time },
-                brackets: { round_of_16: "", quarter_finals: "", semi_finals: "", final: "", champion: "null" }
+                brackets: { qualifications: "", round_of_16: "", quarter_finals: "", semi_finals: "", final: "", champion: "null" }
             }).then(() => { alert("Tournoi lage ak siksè!"); document.getElementById('t-desc').value = ""; closeTournoiModal(); }).catch(err => alert("Erè: " + err.message));
         }
 
@@ -534,7 +545,13 @@
                     } else if(non === "Pool") {
                         const brackets = data.brackets || {};
                         let matchHtml = "";
-                        const roundNames = { "round_of_16": "Premier Tour", "quarter_finals": "Quarter Finals", "semi_finals": "Semi Finals", "final": "GRANDE FINALE" };
+                        const roundNames = { 
+                            "qualifications": "Qualifications",
+                            "round_of_16": "Premier Tour", 
+                            "quarter_finals": "Quarter Finals", 
+                            "semi_finals": "Semi Finals", 
+                            "final": "GRANDE FINALE" 
+                        };
 
                         Object.keys(roundNames).forEach(roundKey => {
                             if(brackets[roundKey] && Array.isArray(brackets[roundKey])) {
