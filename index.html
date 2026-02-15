@@ -476,6 +476,7 @@
             .then(() => alert("Round " + roundToGen + " jenere ak siksè!"));
         }
 
+        // --- FONKSYON MODIFYE POU JWÈ YO KA WÈ TOURNOI YO ---
         window.voyeTournoi = function() {
             const tit = document.getElementById('t-title').value;
             const jwet = document.getElementById('t-game').value;
@@ -488,6 +489,10 @@
             const time = document.getElementById('t-time').value;
 
             if(!tit || !jwet || !type1 || !type2 || !date || !time || !slots || !price) return alert("Ranpli tout bwat yo");
+
+            // Kreye ID Tournoi an
+            const newTourneyRef = push(ref(db, 'tournaments'));
+            const tourID = newTourneyRef.key;
 
             const tournamentData = {
                 info: {
@@ -503,24 +508,27 @@
                 brackets: { qualifications: "", round_of_16: "", quarter_finals: "", semi_finals: "", final: "", champion: "null" }
             };
 
-            // Kreye Tournoi an
-            const newTourneyRef = push(ref(db, 'tournaments'));
+            // 1. Sove done yo pou Admin nan branch 'tournaments'
             set(newTourneyRef, tournamentData).then(() => {
                 
-                // KOUNYE A KONEKTE L AK CHALLENGES
+                // 2. Sove kòm "Challenge" pou Jwè yo ka wè l nan lis "Defi"
+                // Nou itilize egzakteman menm non jaden kòd jwè yo ap chèche (creator_name, bet_amount, etc.)
                 push(ref(db, 'challenges'), {
+                    creator_id: "ADMIN_SYSTEM",
+                    creator_name: "🏆 TOURNOI: " + tit,
                     game: jwet,
-                    game_type: tit + " (Tournoi)",
                     type1: type1,
                     type2: type2,
-                    bet_amount: Number(price),
+                    bet_amount: Number(price), // Sa a se sa ki pral parèt nan vèt la nan lis la
                     status: "open",
-                    is_tourney: true,
-                    tournament_id: newTourneyRef.key,
+                    room_id: "TOURNOI-" + tourID.substring(0, 5),
+                    room_pass: "Gade Orè a",
+                    rules: desc + " | Dat: " + date + " vè " + time,
+                    isTourney: true,
                     timestamp: serverTimestamp()
                 });
 
-                alert("Tournoi lage ak siksè!"); 
+                alert("Tournoi lage ak siksè! Jwè yo ap wè l kounye a."); 
                 document.getElementById('t-title').value = "";
                 document.getElementById('t-price').value = "";
                 document.getElementById('t-desc').value = ""; 
