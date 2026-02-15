@@ -258,9 +258,7 @@
         <div class="modal-content" style="width: 300px;">
             <h3 style="color:var(--primary); margin-top:0;">Lage Tournoi</h3>
             <div class="update-box">
-                <input type="text" id="t-title" placeholder="Tit Tournoi an">
-                <input type="number" id="t-prize" placeholder="Kòb Prix an (HTG)">
-                
+                <input type="text" id="t-title" placeholder="Tit Tournoi (Eg: Summer Cup)">
                 <select id="t-game" onchange="updateGameOptions()">
                     <option value="">Chwazi Jwèt la</option>
                     <option value="Free Fire">Free Fire</option>
@@ -280,7 +278,7 @@
                         }
                     </script>
                 </select>
-
+                <input type="number" id="t-price" placeholder="Pri Enskripsyon (HTG)">
                 <textarea id="t-desc" placeholder="Deskripsyon (Eg: Tournament 1vs1...)"></textarea>
                 <input type="date" id="t-date">
                 <input type="time" id="t-time">
@@ -425,7 +423,6 @@
             .then(() => alert("Ganyen sove!"));
         };
 
-        // --- JENERE POOL AK QUALIFICATIONS ---
         window.jenerePoolMatch = async () => {
             const roundToGen = document.getElementById('round-select').value;
             const manDate = document.getElementById('pool-date-manual').value;
@@ -442,10 +439,10 @@
             const tourData = snap.val();
             let list = [];
             
-            if (currentIdx === 0) { // Si se Qualifications
+            if (currentIdx === 0) { 
                 if(!tourData.teams) return alert("Ajoute moun anvan!");
                 Object.values(tourData.teams).forEach(t => list.push(t.name));
-            } else { // Si se lòt round yo
+            } else { 
                 const prevRound = rounds[currentIdx - 1];
                 const prevMatches = tourData.brackets?.[prevRound];
                 if(!prevMatches) return alert("Ou dwe jenere round anvan an dabò!");
@@ -459,7 +456,6 @@
 
             list.sort(() => Math.random() - 0.5); 
             
-            // Konvèti lè a nan 12h format
             const [hrs, mins] = manTime.split(':');
             const h = hrs % 12 || 12;
             const ampm = hrs >= 12 ? 'PM' : 'AM';
@@ -482,27 +478,24 @@
 
         window.voyeTournoi = function() {
             const tit = document.getElementById('t-title').value;
-            const pri = document.getElementById('t-prize').value;
             const jwet = document.getElementById('t-game').value;
             const type1 = document.getElementById('t-type1').value;
             const type2 = document.getElementById('t-type2').value;
             const slots = document.getElementById('t-max-players').value; 
+            const price = document.getElementById('t-price').value;
             const desc = document.getElementById('t-desc').value;
             const date = document.getElementById('t-date').value;
             const time = document.getElementById('t-time').value;
 
-            if(!tit || !pri || !jwet || !type1 || !type2 || !date || !time || !slots) return alert("Ranpli tout bwat yo");
+            if(!tit || !jwet || !type1 || !type2 || !date || !time || !slots || !price) return alert("Ranpli tout bwat yo");
 
-            const newKey = push(ref(db, 'tournaments')).key;
-            const updates = {};
-
-            // Konekte nan tournaments
-            updates[`tournaments/${newKey}`] = {
+            const tournamentData = {
                 info: {
+                    title: tit,
                     game: jwet, type1: type1, type2: type2,
                     slots: Number(slots),
+                    price: Number(price),
                     description: desc, status: "open",
-                    title: tit, prize: pri,
                     image_bg: gameImages[jwet] || "",
                     created_at: serverTimestamp()
                 },
@@ -510,24 +503,26 @@
                 brackets: { qualifications: "", round_of_16: "", quarter_finals: "", semi_finals: "", final: "", champion: "null" }
             };
 
-            // Konekte nan challenges pou jwè yo wè l
-            updates[`challenges/${newKey}`] = {
-                game: jwet,
-                title: tit,
-                amount: pri,
-                type1: type1,
-                type2: type2,
-                status: "open",
-                isTournament: true,
-                image_url: gameImages[jwet] || "",
-                date: date,
-                time: time
-            };
+            // Kreye Tournoi an
+            const newTourneyRef = push(ref(db, 'tournaments'));
+            set(newTourneyRef, tournamentData).then(() => {
+                
+                // KOUNYE A KONEKTE L AK CHALLENGES
+                push(ref(db, 'challenges'), {
+                    game: jwet,
+                    game_type: tit + " (Tournoi)",
+                    type1: type1,
+                    type2: type2,
+                    bet_amount: Number(price),
+                    status: "open",
+                    is_tourney: true,
+                    tournament_id: newTourneyRef.key,
+                    timestamp: serverTimestamp()
+                });
 
-            update(ref(db), updates).then(() => { 
                 alert("Tournoi lage ak siksè!"); 
                 document.getElementById('t-title').value = "";
-                document.getElementById('t-prize').value = "";
+                document.getElementById('t-price').value = "";
                 document.getElementById('t-desc').value = ""; 
                 closeTournoiModal(); 
             }).catch(err => alert("Erè: " + err.message));
@@ -573,17 +568,11 @@
                         kontni = `<div class="card"><div class="user-header"><img src="${userPhoto}" class="profile-pic" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"><b style="${isBanned ? 'color:var(--danger)' : ''}">${data.username || 'N/A'} ${isBanned ? '(BANNED 🚫)' : ''}</b></div><div class="info">📧 ${data.email || 'Pa gen imèl'}<br>📞 ${data.phone || 'Pa gen nimewo'}<br>🎭 Ròl: ${data.role || 'player'}<br>💰 Balans: <span class="amount">${data.balance || 0} HTG</span></div><div class="update-box"><input type="number" id="bal-${key}" placeholder="Nouvo balans"><button class="btn-update" onclick="updateBalance('${key}')">OK</button><button class="${isBanned ? 'btn-unban' : 'btn-ban'}" onclick="banUser('${key}', ${isBanned})">${isBanned ? 'Unban' : 'Ban'}</button></div></div>`;
                     } else if(non === "Tournoi") {
                         const tInfo = data.info || {};
-                        kontni = `<div class="card" style="background-image: url('${tInfo.image_bg}')"><div class="card-overlay"><b>🏆 ${tInfo.title || tInfo.game}</b><br><div class="info">🎮 ${tInfo.type1 || ''} - ${tInfo.type2 || ''}<br>💰 Prix: <span class="amount">${tInfo.prize || 0} HTG</span><br>📅 <b>Dat:</b> ${data.schedule?.start_date || 'N/A'} | 👥 Limit: ${tInfo.slots || 'N/A'}</div><div class="update-box"><button class="btn-update" style="background:var(--primary)" onclick="openPoolModal('${key}', ${tInfo.slots || 10})">Jere Pool</button><button class="btn-ban" onclick="remove(ref(db, 'tournaments/${key}')); remove(ref(db, 'challenges/${key}'));">X</button></div></div></div>`;
+                        kontni = `<div class="card" style="background-image: url('${tInfo.image_bg}')"><div class="card-overlay"><b>🏆 ${tInfo.title || tInfo.game}</b><br><div class="info">🎮 ${tInfo.type1 || ''} - ${tInfo.type2 || ''}<br>💰 Pri: ${tInfo.price || 0} HTG<br>📅 <b>Dat:</b> ${data.schedule?.start_date || 'N/A'} | 👥 Limit: ${tInfo.slots || 'N/A'}</div><div class="update-box"><button class="btn-update" style="background:var(--primary)" onclick="openPoolModal('${key}', ${tInfo.slots || 10})">Jere Pool</button><button class="btn-ban" onclick="remove(ref(db, 'tournaments/${key}'))">X</button></div></div></div>`;
                     } else if(non === "Pool") {
                         const brackets = data.brackets || {};
                         let matchHtml = "";
-                        const roundNames = { 
-                            "qualifications": "Qualifications",
-                            "round_of_16": "Premier Tour", 
-                            "quarter_finals": "Quarter Finals", 
-                            "semi_finals": "Semi Finals", 
-                            "final": "GRANDE FINALE" 
-                        };
+                        const roundNames = { "qualifications": "Qualifications", "round_of_16": "Premier Tour", "quarter_finals": "Quarter Finals", "semi_finals": "Semi Finals", "final": "GRANDE FINALE" };
 
                         Object.keys(roundNames).forEach(roundKey => {
                             if(brackets[roundKey] && Array.isArray(brackets[roundKey])) {
@@ -611,7 +600,7 @@
                         const isMe = data.sender_name === "ADMIN - PRIME";
                         kontni = `<div class="chat-bubble ${isMe ? 'admin' : 'user'}"><img src="${data.sender_pfp || ''}" class="chat-user-pic"><div class="msg-content">${data.text}</div></div>`;
                     } else if(non === "Defi Lage" || non === "Defi Asepte") {
-                        kontni = `<div class="card"><b>🎮 ${data.title || data.game_type || data.game}</b><br>Miz: <span class="amount">${data.amount || data.bet_amount} HTG</span></div>`;
+                        kontni = `<div class="card"><b>🎮 ${data.game_type || data.game}</b><br>Miz: <span class="amount">${data.bet_amount || data.amount} HTG</span></div>`;
                     } else if(non === "Prèv Match" || non === "Depo" || non === "Retrè") {
                         kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username}<br>Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
                     }
