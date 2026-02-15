@@ -476,7 +476,6 @@
             .then(() => alert("Round " + roundToGen + " jenere ak siksè!"));
         }
 
-        // --- FONKSYON LAGE TOURNOI KI KONPATIB AK JWÈ YO ---
         window.voyeTournoi = function() {
             const tit = document.getElementById('t-title').value;
             const jwet = document.getElementById('t-game').value;
@@ -508,7 +507,6 @@
             };
 
             set(newTourneyRef, tournamentData).then(() => {
-                // Done kòd jwè a bezwen pou l parèt nan lis Defi/Tourwa
                 push(ref(db, 'challenges'), {
                     creator_id: "ADMIN_SYSTEM",
                     creator_name: "🏆 TOURNOI: " + tit,
@@ -608,10 +606,40 @@
                     } else if(non === "Chat") {
                         const isMe = data.sender_name === "ADMIN - PRIME";
                         kontni = `<div class="chat-bubble ${isMe ? 'admin' : 'user'}"><img src="${data.sender_pfp || ''}" class="chat-user-pic"><div class="msg-content">${data.text}</div></div>`;
-                    } else if(non === "Defi Lage" || non === "Defi Asepte") {
-                        kontni = `<div class="card"><b>🎮 ${data.game_type || data.game}</b><br>Miz: <span class="amount">${data.bet_amount || data.amount} HTG</span></div>`;
+                    } else if(non === "Defi Lage") {
+                        // Seksyon Defi Lage ak tout detay (Jwèt, Jwè, Kòb)
+                        if (data.status === "open") {
+                            kontni = `
+                            <div class="card">
+                                <b>🎮 ${data.game}</b>
+                                <div class="info">
+                                    👤 Jwè: ${data.creator_name || 'Inkonnu'}<br>
+                                    🕹️ Mode: ${data.type1 || ''} - ${data.type2 || ''}<br>
+                                    💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span>
+                                </div>
+                                <div class="update-box">
+                                    <button class="btn-ban" style="width:100%" onclick="if(confirm('Wete defi sa?')) remove(ref(db, 'challenges/${key}'))">Wete Defi sa</button>
+                                </div>
+                            </div>`;
+                        }
+                    } else if(non === "Defi Asepte") {
+                        // Seksyon Defi Asepte (Match ki pare pou jwe)
+                        if (data.status === "accepted") {
+                            kontni = `
+                            <div class="card">
+                                <b>🤝 MATCH PARE: ${data.game}</b>
+                                <div class="info">
+                                    ⚔️ ${data.creator_name} <span style="color:red">VS</span> ${data.joiner_name || 'Jwè 2'}<br>
+                                    💰 Miz: <span class="amount">${data.bet_amount || 0} HTG</span><br>
+                                    🎮 Mode: ${data.type1} | ${data.type2}
+                                </div>
+                                <div class="update-box">
+                                    <button class="btn-ban" style="width:100%" onclick="if(confirm('Anile match sa?')) remove(ref(db, 'challenges/${key}'))">Anile Match</button>
+                                </div>
+                            </div>`;
+                        }
                     } else if(non === "Prèv Match" || non === "Depo" || non === "Retrè") {
-                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inconnu'}<br>Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
+                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inkonnu'}<br>Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
                     }
                     if (kontni !== "") area.innerHTML += kontni;
                 });
