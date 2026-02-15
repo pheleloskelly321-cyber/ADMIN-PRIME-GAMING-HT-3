@@ -245,7 +245,7 @@
         <button onclick="chajKategori('challenges', 'Defi Asepte', this)">Defi Asepte</button>
         <button onclick="chajKategori('tournaments', 'Tournoi', this)">Tournoi</button>
         <button onclick="chajKategori('tournaments', 'Pool', this)">Pool</button>
-        <button onclick="chajKategori('admin_requests/match_results', 'Prèv Match', this)">Prèv Match</button>
+        <button onclick="currentRef && off(currentRef); chajKategori('admin_requests/match_results', 'Prèv Match', this)">Prèv Match</button>
         <button onclick="chajKategori('users', 'Users', this)">Users</button>
         <button onclick="chajKategori('chat', 'Chat', this)">Chat</button>
     </div>
@@ -476,7 +476,7 @@
             .then(() => alert("Round " + roundToGen + " jenere ak siksè!"));
         }
 
-        // --- FONKSYON MODIFYE POU JWÈ YO KA WÈ TOURNOI YO ---
+        // --- FONKSYON LAGE TOURNOI KI KONPATIB AK JWÈ YO ---
         window.voyeTournoi = function() {
             const tit = document.getElementById('t-title').value;
             const jwet = document.getElementById('t-game').value;
@@ -490,7 +490,6 @@
 
             if(!tit || !jwet || !type1 || !type2 || !date || !time || !slots || !price) return alert("Ranpli tout bwat yo");
 
-            // Kreye ID Tournoi an
             const newTourneyRef = push(ref(db, 'tournaments'));
             const tourID = newTourneyRef.key;
 
@@ -508,23 +507,25 @@
                 brackets: { qualifications: "", round_of_16: "", quarter_finals: "", semi_finals: "", final: "", champion: "null" }
             };
 
-            // 1. Sove done yo pou Admin nan branch 'tournaments'
             set(newTourneyRef, tournamentData).then(() => {
-                
-                // 2. Sove kòm "Challenge" pou Jwè yo ka wè l nan lis "Defi"
-                // Nou itilize egzakteman menm non jaden kòd jwè yo ap chèche (creator_name, bet_amount, etc.)
+                // Done kòd jwè a bezwen pou l parèt nan lis Defi/Tourwa
                 push(ref(db, 'challenges'), {
                     creator_id: "ADMIN_SYSTEM",
                     creator_name: "🏆 TOURNOI: " + tit,
+                    creator_img: "https://cdn-icons-png.flaticon.com/512/2206/2206368.png",
                     game: jwet,
+                    game_type: tit,
                     type1: type1,
                     type2: type2,
-                    bet_amount: Number(price), // Sa a se sa ki pral parèt nan vèt la nan lis la
+                    bet_amount: Number(price),
+                    amount: Number(price),
                     status: "open",
                     room_id: "TOURNOI-" + tourID.substring(0, 5),
                     room_pass: "Gade Orè a",
                     rules: desc + " | Dat: " + date + " vè " + time,
+                    is_tourney: true,
                     isTourney: true,
+                    tournament_id: tourID,
                     timestamp: serverTimestamp()
                 });
 
@@ -610,7 +611,7 @@
                     } else if(non === "Defi Lage" || non === "Defi Asepte") {
                         kontni = `<div class="card"><b>🎮 ${data.game_type || data.game}</b><br>Miz: <span class="amount">${data.bet_amount || data.amount} HTG</span></div>`;
                     } else if(non === "Prèv Match" || non === "Depo" || non === "Retrè") {
-                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username}<br>Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
+                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inconnu'}<br>Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
                     }
                     if (kontni !== "") area.innerHTML += kontni;
                 });
