@@ -292,15 +292,19 @@
         <div class="modal-content" style="width: 320px;">
             <h3 style="color:var(--primary); margin-top:0;">Jere Pool & Ekip</h3>
             <div id="pool-info" style="font-size: 13px; margin-bottom: 10px; color: #8B949E;"></div>
+            
             <div id="list-ekip" style="max-height: 150px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #30363D; padding: 5px; border-radius: 5px;"></div>
+
             <div class="update-box" id="form-ekip">
                 <input type="text" id="nom-ekip" placeholder="Non Ekip/Jwè">
                 <button class="btn-update" style="width:100%" onclick="ajouteEkipPool()">Enskri Jwè sa</button>
             </div>
+            
             <div class="update-box" style="margin-top: 10px; border-top: 1px dashed #444; padding-top: 10px;">
                 <label style="font-size: 11px; color: var(--primary);">Paramèt Match yo:</label>
                 <input type="date" id="pool-date-manual">
                 <input type="time" id="pool-time-manual">
+
                 <label style="font-size: 11px; color: var(--primary);">Chwazi Round:</label>
                 <select id="round-select">
                     <option value="qualifications">Qualifications</option>
@@ -522,7 +526,11 @@
                     tournament_id: tourID,
                     timestamp: serverTimestamp()
                 });
-                alert("Tournoi lage ak siksè!"); 
+
+                alert("Tournoi lage ak siksè! Jwè yo ap wè l kounye a."); 
+                document.getElementById('t-title').value = "";
+                document.getElementById('t-price').value = "";
+                document.getElementById('t-desc').value = ""; 
                 closeTournoiModal(); 
             }).catch(err => alert("Erè: " + err.message));
         }
@@ -536,8 +544,9 @@
 
         window.banUser = function(uid, isCurrentlyBanned) {
             const newRole = isCurrentlyBanned ? 'player' : 'banned';
-            if(confirm(isCurrentlyBanned ? "Debloke jwè sa?" : "Bloke (Ban) jwè sa?")) {
-                update(ref(db, `users/${uid}`), { role: newRole }).then(() => alert("Siksè!")).catch(err => alert("Erè: " + err.message));
+            const konfimasyon = isCurrentlyBanned ? "Debloke jwè sa?" : "Bloke (Ban) jwè sa?";
+            if(confirm(konfimasyon)) {
+                update(ref(db, `users/${uid}`), { role: newRole }).then(() => alert("Estati a chanje ak siksè!")).catch(err => alert("Erè: " + err.message));
             }
         }
 
@@ -563,38 +572,78 @@
                     if(non === "Users") {
                         const isBanned = data.role === 'banned';
                         const userPhoto = data.photoUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-                        kontni = `<div class="card"><div class="user-header"><img src="${userPhoto}" class="profile-pic"><b style="${isBanned ? 'color:var(--danger)' : ''}">${data.username || 'N/A'}</b></div><div class="info">📧 ${data.email || ''}<br>📞 ${data.phone || ''}<br>💰 Balans: <span class="amount">${data.balance || 0} HTG</span></div><div class="update-box"><input type="number" id="bal-${key}" placeholder="Nouvo balans"><button class="btn-update" onclick="updateBalance('${key}')">OK</button><button class="${isBanned ? 'btn-unban' : 'btn-ban'}" onclick="banUser('${key}', ${isBanned})">${isBanned ? 'Unban' : 'Ban'}</button></div></div>`;
+                        kontni = `<div class="card"><div class="user-header"><img src="${userPhoto}" class="profile-pic" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"><b style="${isBanned ? 'color:var(--danger)' : ''}">${data.username || 'N/A'} ${isBanned ? '(BANNED 🚫)' : ''}</b></div><div class="info">📧 ${data.email || 'Pa gen imèl'}<br>📞 ${data.phone || 'Pa gen nimewo'}<br>🎭 Ròl: ${data.role || 'player'}<br>💰 Balans: <span class="amount">${data.balance || 0} HTG</span></div><div class="update-box"><input type="number" id="bal-${key}" placeholder="Nouvo balans"><button class="btn-update" onclick="updateBalance('${key}')">OK</button><button class="${isBanned ? 'btn-unban' : 'btn-ban'}" onclick="banUser('${key}', ${isBanned})">${isBanned ? 'Unban' : 'Ban'}</button></div></div>`;
                     } else if(non === "Tournoi") {
                         const tInfo = data.info || {};
-                        kontni = `<div class="card" style="background-image: url('${tInfo.image_bg}')"><div class="card-overlay"><b>🏆 ${tInfo.title || tInfo.game}</b><br><div class="info">💰 Pri: ${tInfo.price || 0} HTG<br>📅 Dat: ${data.schedule?.start_date || 'N/A'}</div><div class="update-box"><button class="btn-update" style="background:var(--primary)" onclick="openPoolModal('${key}', ${tInfo.slots || 10})">Jere Pool</button><button class="btn-ban" onclick="remove(ref(db, 'tournaments/${key}'))">X</button></div></div></div>`;
+                        kontni = `<div class="card" style="background-image: url('${tInfo.image_bg}')"><div class="card-overlay"><b>🏆 ${tInfo.title || tInfo.game}</b><br><div class="info">🎮 ${tInfo.type1 || ''} - ${tInfo.type2 || ''}<br>💰 Pri: ${tInfo.price || 0} HTG<br>📅 <b>Dat:</b> ${data.schedule?.start_date || 'N/A'} | 👥 Limit: ${tInfo.slots || 'N/A'}</div><div class="update-box"><button class="btn-update" style="background:var(--primary)" onclick="openPoolModal('${key}', ${tInfo.slots || 10})">Jere Pool</button><button class="btn-ban" onclick="remove(ref(db, 'tournaments/${key}'))">X</button></div></div></div>`;
                     } else if(non === "Pool") {
                         const brackets = data.brackets || {};
                         let matchHtml = "";
                         const roundNames = { "qualifications": "Qualifications", "round_of_16": "Premier Tour", "quarter_finals": "Quarter Finals", "semi_finals": "Semi Finals", "final": "GRANDE FINALE" };
+
                         Object.keys(roundNames).forEach(roundKey => {
                             if(brackets[roundKey] && Array.isArray(brackets[roundKey])) {
                                 matchHtml += `<div style="color:var(--primary); font-size:11px; margin-top:10px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:3px;">${roundNames[roundKey]}</div>`;
                                 brackets[roundKey].forEach((m, idx) => {
-                                    matchHtml += `<div class="pool-match"><div class="match-meta"><span>📅 ${m.date}</span><span>⏰ ${m.time}</span></div><div class="match-teams"><div class="pool-team">${m.p1}</div><div class="pool-vs">VS</div><div class="pool-team">${m.p2}</div></div><select class="winner-select" onchange="setWinner('${key}', '${roundKey}', ${idx}, this.value)"><option value="null">-- Chwazi Ganyen --</option><option value="${m.p1}" ${m.winner === m.p1 ? 'selected' : ''}>${m.p1}</option><option value="${m.p2}" ${m.winner === m.p2 ? 'selected' : ''}>${m.p2}</option></select></div>`;
+                                    matchHtml += `
+                                    <div class="pool-match">
+                                        <div class="match-meta"><span>📅 ${m.date}</span><span>⏰ ${m.time}</span></div>
+                                        <div class="match-teams">
+                                            <div class="pool-team" style="${m.winner === m.p1 ? 'color:var(--accent)' : ''}">${m.p1}</div>
+                                            <div class="pool-vs">VS</div>
+                                            <div class="pool-team" style="${m.winner === m.p2 ? 'color:var(--accent)' : ''}">${m.p2}</div>
+                                        </div>
+                                        <select class="winner-select" onchange="setWinner('${key}', '${roundKey}', ${idx}, this.value)">
+                                            <option value="null">-- Chwazi Ganyen --</option>
+                                            <option value="${m.p1}" ${m.winner === m.p1 ? 'selected' : ''}>Ganyen: ${m.p1}</option>
+                                            <option value="${m.p2}" ${m.winner === m.p2 ? 'selected' : ''}>Ganyen: ${m.p2}</option>
+                                        </select>
+                                    </div>`;
                                 });
                             }
                         });
-                        if(matchHtml !== "") kontni = `<div class="card"><b>📊 TABLO MATCH - ${data.info?.game || 'Tournoi'}</b>${matchHtml}</div>`;
+                        if(matchHtml !== "") { kontni = `<div class="card"><b>📊 TABLO MATCH - ${data.info?.game || 'Tournoi'}</b>${matchHtml}</div>`; }
                     } else if(non === "Chat") {
                         const isMe = data.sender_name === "ADMIN - PRIME";
                         kontni = `<div class="chat-bubble ${isMe ? 'admin' : 'user'}"><img src="${data.sender_pfp || ''}" class="chat-user-pic"><div class="msg-content">${data.text}</div></div>`;
                     } else if(non === "Defi Lage") {
                         if (data.status === "open") {
-                            kontni = `<div class="card"><b>🎮 ${data.game}</b><div class="info">👤 Jwè: ${data.creator_name}<br>💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span></div><div class="update-box"><button class="btn-ban" style="width:100%" onclick="if(confirm('Wete defi sa?')) remove(ref(db, 'challenges/${key}'))">Wete Defi sa</button></div></div>`;
+                            kontni = `
+                            <div class="card">
+                                <b>🎮 ${data.game}</b>
+                                <div class="info">
+                                    👤 Jwè: ${data.creator_name || 'Inkonnu'}<br>
+                                    🕹️ Mode: ${data.type1 || ''} - ${data.type2 || ''}<br>
+                                    💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span>
+                                </div>
+                                <div class="update-box">
+                                    <button class="btn-ban" style="width:100%" onclick="if(confirm('Wete defi sa?')) remove(ref(db, 'challenges/${key}'))">Wete Defi sa</button>
+                                </div>
+                            </div>`;
                         }
                     } else if(non === "Defi Asepte") {
-                        // MODIFIKASYON: Filtraj ak Bouton Anile
-                        if (data.status === "accepted" && data.player2_name && data.player2_name !== "null") {
-                            kontni = `<div class="card"><b style="color:var(--accent)">🤝 MATCH ASEPTE: ${data.game}</b><div class="info">⚔️ <b>${data.creator_name}</b> VS <b>${data.player2_name}</b><br>💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span><br>🆔 Room: ${data.room_id || 'N/A'}</div><div class="update-box"><button class="btn-ban" style="width:100%" onclick="if(confirm('Anile match sa?')) remove(ref(db, 'challenges/${key}'))">Anile Match</button></div></div>`;
+                        if (data.status === "accepted" && data.player2_name && data.player2_name !== "null" && data.player2_name !== "") {
+                            kontni = `
+                            <div class="card">
+                                <b style="color:var(--accent)">🤝 MATCH ASEPTE: ${data.game}</b>
+                                <div class="info">
+                                    ⚔️ <b>${data.creator_name}</b> <span style="color:var(--danger)">VS</span> <b>${data.player2_name || data.joiner_name || 'Jwè ki asepte a'}</b><br>
+                                    💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span><br>
+                                    🎮 Mode: ${data.type1 || ''} | ${data.type2 || ''}<br>
+                                    🆔 Room: ${data.room_id || 'N/A'} | PW: ${data.room_pass || 'N/A'}
+                                </div>
+                                <div class="update-box">
+                                    <button class="btn-ban" style="width:100%" onclick="if(confirm('Anile match sa?')) remove(ref(db, 'challenges/${key}'))">Anile Match</button>
+                                </div>
+                            </div>`;
                         }
                     } else if(non === "Prèv Match" || non === "Depo" || non === "Retrè") {
-                        // MODIFIKASYON: Afiche Foto ak Nimewo telefòn pou Retrè
-                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inkonnu'}<br>${data.phone ? '📞 Nimewo: ' + data.phone + '<br>' : ''}Montan: ${data.amount || ''} HTG ${imgHtml}</div>`;
+                        // MODIFIKASYON POU RETRÈ AK PRÈV MATCH
+                        let extraInfo = "";
+                        if(non === "Retrè") {
+                            extraInfo = `<br>📞 Nimewo: <span style="color:var(--primary)">${data.phone || data.number || 'Pa gen nimewo'}</span>`;
+                        }
+                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inkonnu'}<br>Montan: ${data.amount || ''} HTG ${extraInfo} ${imgHtml}</div>`;
                     }
                     if (kontni !== "") area.innerHTML += kontni;
                 });
