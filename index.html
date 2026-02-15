@@ -203,6 +203,7 @@
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #30363D;
+            display: none; /* Kache l pa defo */
         }
 
         .prev-img {
@@ -391,6 +392,16 @@
         }
         window.closePoolModal = () => { document.getElementById("modalPool").style.display = "none"; }
 
+        // Fonksyon pou louvri prèv la
+        window.togglePrevMatch = (id) => {
+            const element = document.getElementById('prev-container-' + id);
+            if (element.style.display === "none" || element.style.display === "") {
+                element.style.display = "block";
+            } else {
+                element.style.display = "none";
+            }
+        }
+
         function kouteEkipPool() {
             onValue(ref(db, `tournaments/${activeTournoiID}/teams`), (snap) => {
                 const list = document.getElementById("list-ekip");
@@ -567,7 +578,9 @@
                 snapshot.forEach((child) => {
                     const data = child.val(); const key = child.key; let kontni = "";
                     const imgUrl = data.proof_img || data.screenshot || data.photoUrl || data.image_url;
-                    const imgHtml = imgUrl ? `<div class="prev-img-container"><img src="${imgUrl}" class="prev-img" onclick="openModal('${imgUrl}')"></div>` : "";
+                    
+                    // Kreye HTML imaj la ak yon ID espesyal pou kache l
+                    const imgHtml = imgUrl ? `<div class="prev-img-container" id="prev-container-${key}"><img src="${imgUrl}" class="prev-img" onclick="openModal('${imgUrl}')"></div>` : "";
 
                     if(non === "Users") {
                         const isBanned = data.role === 'banned';
@@ -638,12 +651,24 @@
                             </div>`;
                         }
                     } else if(non === "Prèv Match" || non === "Depo" || non === "Retrè") {
-                        // MODIFIKASYON POU RETRÈ AK PRÈV MATCH
                         let extraInfo = "";
                         if(non === "Retrè") {
                             extraInfo = `<br>📞 Nimewo: <span style="color:var(--primary)">${data.phone || data.number || 'Pa gen nimewo'}</span>`;
                         }
-                        kontni = `<div class="card"><b>${non}</b><br>Jwè: ${data.username || 'Inkonnu'}<br>Montan: ${data.amount || ''} HTG ${extraInfo} ${imgHtml}</div>`;
+
+                        // Si se Prèv Match, nou ajoute bouton klike a
+                        let clickAction = (non === "Prèv Match" && imgUrl) ? `onclick="togglePrevMatch('${key}')" style="cursor:pointer; color:var(--primary)"` : "";
+                        let labelClick = (non === "Prèv Match" && imgUrl) ? `<br><small style="color:var(--accent)">[Klike pou wè prèv 👁️]</small>` : "";
+
+                        kontni = `
+                        <div class="card">
+                            <b ${clickAction}>${non} ${labelClick}</b>
+                            <div class="info">
+                                Jwè: ${data.username || 'Inkonnu'}<br>
+                                Montan: ${data.amount || ''} HTG ${extraInfo}
+                            </div>
+                            ${imgHtml}
+                        </div>`;
                     }
                     if (kontni !== "") area.innerHTML += kontni;
                 });
