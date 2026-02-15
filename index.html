@@ -607,7 +607,6 @@
                         const isMe = data.sender_name === "ADMIN - PRIME";
                         kontni = `<div class="chat-bubble ${isMe ? 'admin' : 'user'}"><img src="${data.sender_pfp || ''}" class="chat-user-pic"><div class="msg-content">${data.text}</div></div>`;
                     } else if(non === "Defi Lage") {
-                        // Seksyon Defi Lage ak tout detay (Jwèt, Jwè, Kòb)
                         if (data.status === "open") {
                             kontni = `
                             <div class="card">
@@ -623,15 +622,15 @@
                             </div>`;
                         }
                     } else if(non === "Defi Asepte") {
-                        // Seksyon Defi Asepte (Match ki pare pou jwe)
                         if (data.status === "accepted") {
                             kontni = `
                             <div class="card">
-                                <b>🤝 MATCH PARE: ${data.game}</b>
+                                <b style="color:var(--accent)">🤝 MATCH ASEPTE: ${data.game}</b>
                                 <div class="info">
-                                    ⚔️ ${data.creator_name} <span style="color:red">VS</span> ${data.joiner_name || 'Jwè 2'}<br>
-                                    💰 Miz: <span class="amount">${data.bet_amount || 0} HTG</span><br>
-                                    🎮 Mode: ${data.type1} | ${data.type2}
+                                    ⚔️ <b>${data.creator_name}</b> <span style="color:var(--danger)">VS</span> <b>${data.joiner_name || 'Jwè ki asepte a'}</b><br>
+                                    💰 Miz: <span class="amount">${data.bet_amount || data.amount || 0} HTG</span><br>
+                                    🎮 Mode: ${data.type1 || ''} | ${data.type2 || ''}<br>
+                                    🆔 Room: ${data.room_id || 'N/A'} | PW: ${data.room_pass || 'N/A'}
                                 </div>
                                 <div class="update-box">
                                     <button class="btn-ban" style="width:100%" onclick="if(confirm('Anile match sa?')) remove(ref(db, 'challenges/${key}'))">Anile Match</button>
